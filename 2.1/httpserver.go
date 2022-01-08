@@ -26,5 +26,7 @@ func myHandler(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, fmt.Sprintf("%s=%s\n", k, v))
 
 	}
+	io.WriteString(w, "********** INFO  **********\n")
+	fmt.Println("访问客户端IP及端口：" + r.RemoteAddr + "\n")
 
 }
