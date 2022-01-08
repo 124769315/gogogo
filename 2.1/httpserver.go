@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"runtime"
 )
 
 func main() {
@@ -18,8 +19,12 @@ func healthz(w http.ResponseWriter, r *http.Request) {
 }
 
 func myHandler(w http.ResponseWriter, r *http.Request) {
+	io.WriteString(w, "********** go version **********\n")
+	io.WriteString(w, runtime.Version()+"\n")
 	io.WriteString(w, "********** request header **********\n")
 	for k, v := range r.Header {
 		io.WriteString(w, fmt.Sprintf("%s=%s\n", k, v))
+
 	}
+
 }
