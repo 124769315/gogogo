@@ -90,4 +90,20 @@ Accept=[*/*]
 
 ```
 
-
+## 上传镜像
+```
+[root@master1 3.2]# docker image tag go-httpserver qiubinwei513/go-httpserver
+[root@master1 3.2]# docker push qiubinwei513/go-httpserver
+Using default tag: latest
+The push refers to repository [docker.io/qiubinwei513/go-httpserver]
+f7dbfd63ab09: Pushing [==================================================>]  6.157MB/6.157MB
+d950a0fc2915: Pushing [==================================================>]  4.096kB
+758e62195b76: Pushing  3.072kB
+ff1ca36e88c3: Pushing  3.072kB
+ff3ebff0c3fd: Pushing [==============>                                    ]    117MB/407.8MB
+bab89c562840: Waiting 
+26a504e63be4: Waiting 
+8bf42db0de72: Waiting 
+31892cc314cb: Waiting 
+11936051f93b: Waiting 
+```
