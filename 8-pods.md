@@ -173,4 +173,147 @@ spec:
 
 
 
+# 创建deployment
+```
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+        name: http-deployment
+spec:
+        replicas: 3
+        selector:
+                matchLabels:
+                        app: nginx
+        template:
+                        metadata:
+                                labels:
+                                        app: nginx
+                        spec:
+                                containers:
+                                      - name: http-deployment-qbw
+                                        image: localhost:5000/http
+                                        imagePullPolicy: IfNotPresent
+                                        resources:
+                                                limits:
+                                                        cpu: 100m
+                                                        memory: "100Mi"
+                                                requests:
+                                                        cpu: 100m
+                                                        memory: "100Mi"
+                                        readinessProbe:
+                                                httpGet:
+                                                        path: /healthz
+                                                        port: 80
+                                                initialDelaySeconds: 15
+                                                periodSeconds: 5
+                                        lifecycle:
+                                                preStop:
+                                                        exec:
+                                                                command: ["PID=`ps -ef | grep httpser | grep -v sh | grep -v grep | awk '{print $2}'` && kill -9 $PID"]
+
+```
+
+## 运行deployment
+```
+root@master01:/m8# k get pod
+NAME                              READY   STATUS    RESTARTS      AGE
+envoy-6958c489d9-7jf79            1/1     Running   1 (11d ago)   13d
+http-deployment-c859ff4d7-fbdrb   1/1     Running   0             31m
+http-deployment-c859ff4d7-gpxp5   1/1     Running   0             8m5s
+http-deployment-c859ff4d7-rnbs7   1/1     Running   0             31m
+jenkins-0                         1/1     Running   0             40h
+ng-deployment                     1/1     Running   2 (11d ago)   35d
+```
+
+## 创建对应service
+```
+root@master01:/m8# cat service.yaml 
+apiVersion: v1
+kind: Service
+metadata:
+        name: http-basic
+spec:
+        type: ClusterIP
+        ports:
+                - port: 80
+                  protocol: TCP
+                  name: http
+        selector:
+                app: nginx
+
+```
+### 查看svc
+```
+root@master01:/m8# k get svc
+NAME             TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)                        AGE
+envoy            NodePort    10.102.222.191   <none>        10000:31565/TCP                42d
+http-basic       ClusterIP   10.111.26.215    <none>        80/TCP                         8d
+jenkins          NodePort    10.104.153.112   <none>        80:31364/TCP,50000:32456/TCP   43h
+kubernetes       ClusterIP   10.96.0.1        <none>        443/TCP                        43d
+nginx-service    NodePort    10.109.1.139     <none>        80:30080/TCP                   43d
+readiness-gate   ClusterIP   10.110.144.224   <none>        80/TCP                         13d
+
+```
+## 安装ingress
+
+## 创建ingress
+```
+root@master01:/m8# cat http-ingress.yaml 
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gateway
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+spec:
+  tls:
+    - hosts:
+        - cncamp.com
+      secretName: cncamp-tls
+  rules:
+    - host: cncamp.com
+      http:
+        paths:
+          - path: "/"
+            pathType: Prefix
+            backend:
+              service:
+                name: http-basic
+                port:
+                  number: 80
+```
+### 查看ingress
+```
+root@master01:/m8# k get ingress
+NAME      CLASS    HOSTS        ADDRESS     PORTS     AGE
+gateway   <none>   cncamp.com   10.0.16.8   80, 443   7d9h
+```
+### 查看ingress对应外部controller IP及端口
+```
+root@master01:/m8# kubectl get svc -n ingress-nginx
+NAME                                 TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)                      AGE
+ingress-nginx-controller             NodePort    10.99.39.141   <none>        80:31233/TCP,443:30054/TCP   7d12h
+ingress-nginx-controller-admission   ClusterIP   10.103.78.85   <none>        443/TCP                      7d12h
+
+```
+
+## 通过https + curl 访问
+```
+root@master01:/m8# curl -H "Host: cncamp.com" https://101.34.27.159:30054  -k
+********** go version **********
+go1.13.8
+********** request header **********
+X-Real-Ip=[172.16.241.64]
+X-Forwarded-For=[172.16.241.64]
+X-Forwarded-Host=[cncamp.com]
+X-Forwarded-Proto=[https]
+X-Forwarded-Scheme=[https]
+User-Agent=[curl/7.68.0]
+Accept=[*/*]
+X-Request-Id=[087cb3e9ee06bac7e0f104a9da5147d5]
+X-Forwarded-Port=[443]
+X-Scheme=[https]
+********** INFO  **********
+
+```
 
